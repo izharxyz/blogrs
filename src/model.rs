@@ -1,13 +1,14 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(sqlx::FromRow, Serialize, Deserialize)]
-pub struct Post {
+pub struct PostModel {
     pub id: i32,
     pub title: String,
-    pub author: String,
+    pub slug: String,
+    pub author: Option<String>,
+    pub excerpt: String,
     pub content: String,
     pub category: Option<String>,
-    pub published: Option<bool>,
     #[serde(rename = "createdAt")]
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
     #[serde(rename = "updatedAt")]
