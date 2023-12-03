@@ -1,5 +1,6 @@
-mod controllers;
+mod controller;
 mod model;
+mod route;
 mod schema;
 
 use axum::{
@@ -10,13 +11,20 @@ use axum::{
     routing::{delete, get, patch, post},
     Router,
 };
+use std::sync::Arc;
 
 use dotenv::dotenv;
-use sqlx::postgres::PgPoolOptions;
+use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use tokio::net::TcpListener;
 
 use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+use route::api_routes;
+
+pub struct AppState {
+    db: Pool<Postgres>,
+}
 
 #[tokio::main]
 async fn main() {
@@ -52,12 +60,13 @@ async fn main() {
         .allow_credentials(false)
         .allow_headers([AUTHORIZATION, ACCEPT, CONTENT_TYPE]);
 
+    let app_state = Arc::new(AppState { db: pool.clone() });
     let app = Router::new()
         .route("/", get(|| async { "Welcome to blogrs API!" }))
         .route("/post/create", post(|| async { "Create Post" }))
         .route("/post/edit/:id", patch(|| async { "Edit Post" }))
         .route("/post/delete/:id", delete(|| async { "Delete Post" }))
-        .with_state(pool)
+        .nest("/api", api_routes(app_state))
         .layer(cors);
 
     let listener = TcpListener::bind("127.0.0.1:3000").await.unwrap();
