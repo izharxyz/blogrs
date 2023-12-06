@@ -15,11 +15,11 @@ pub struct ParamOptions {
 pub struct CreatePostSchema {
     pub title: String,
     pub slug: String,
-    pub author: Option<String>,
+    pub author_id: Option<i32>,
     pub excerpt: String,
     pub content: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub category: Option<String>,
+    pub category_id: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -28,6 +28,5 @@ pub struct UpdatePostSchema {
     pub slug: Option<String>,
     pub excerpt: Option<String>,
     pub content: Option<String>,
-    pub category: Option<String>,
-    pub published: Option<bool>,
+    pub category_id: Option<i32>,
 }
