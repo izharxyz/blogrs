@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use axum::{
+    debug_handler,
     extract::{Path, Query, State},
     http::StatusCode,
     response::IntoResponse,
@@ -10,7 +11,7 @@ use serde_json::json;
 
 use crate::{
     model::PostModel,
-    schema::{FilterOptions, ParamOptions, UpdatePostSchema},
+    schema::{CreatePostSchema, FilterOptions, ParamOptions, UpdatePostSchema},
     AppState,
 };
 
@@ -54,10 +55,59 @@ pub async fn fetch_post_controller(
     Ok((StatusCode::OK, Json(response)))
 }
 
+#[debug_handler]
+pub async fn create_post_controller(
+    State(data): State<Arc<AppState>>,
+    Json(payload): Json<CreatePostSchema>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let title = payload.title;
+    let slug = payload.slug;
+    let excerpt = payload.excerpt;
+    let content = payload.content;
+    let category_id = payload.category_id.unwrap_or(1);
+    let author_id = 1; // TODO: Change this to the logged in user
+
+    let create_query = sqlx::query_as!(
+        PostModel,
+        r#"
+        INSERT INTO post (title, slug, excerpt, content, category_id, author_id)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING *
+        "#,
+        title,
+        slug,
+        excerpt,
+        content,
+        category_id,
+        author_id
+    )
+    .fetch_one(&data.db)
+    .await;
+
+    match create_query {
+        Ok(created_post) => {
+            let response = serde_json::json!({"status": "success","data": serde_json::json!({
+                "post": created_post
+            })});
+
+            return Ok((StatusCode::CREATED, Json(response)));
+        }
+        Err(_) => {
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(
+                    json!({"status": "error","message": "Something bad happened while creating the post"}),
+                ),
+            ));
+        }
+    }
+}
+
+#[debug_handler]
 pub async fn update_post_controller(
     Path(params): Path<ParamOptions>,
-    Json(payload): Json<UpdatePostSchema>,
     State(data): State<Arc<AppState>>,
+    Json(payload): Json<UpdatePostSchema>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let post_id = params.id.parse::<i32>().unwrap();
 
