@@ -8,7 +8,7 @@ use axum::{
         header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE},
         Method,
     },
-    routing::{delete, get, patch, post},
+    routing::get,
     Router,
 };
 use std::sync::Arc;
@@ -45,7 +45,7 @@ async fn main() {
         .await
     {
         Ok(pool) => {
-            tracing::info!("Connection to the database is successful!");
+            tracing::info!("Successfully connected to the database!");
             pool
         }
         Err(err) => {
@@ -63,9 +63,6 @@ async fn main() {
     let app_state = Arc::new(AppState { db: pool.clone() });
     let app = Router::new()
         .route("/", get(|| async { "Welcome to blogrs API!" }))
-        .route("/post/create", post(|| async { "Create Post" }))
-        .route("/post/edit/:id", patch(|| async { "Edit Post" }))
-        .route("/post/delete/:id", delete(|| async { "Delete Post" }))
         .nest("/api", api_routes(app_state))
         .layer(cors);
 
