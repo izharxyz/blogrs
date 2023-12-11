@@ -92,11 +92,20 @@ pub async fn create_post_controller(
 
             return Ok((StatusCode::CREATED, Json(response)));
         }
-        Err(_) => {
+        Err(e) => {
+            if e.to_string()
+                .contains("duplicate key value violates unique constraint")
+            {
+                let error_response = serde_json::json!({
+                    "status": "fail",
+                    "message": "Post with that title already exists",
+                });
+                return Err((StatusCode::CONFLICT, Json(error_response)));
+            }
             return Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(
-                    json!({"status": "error","message": "Something bad happened while creating the post"}),
+                    json!({"status": "fail","message": "Something bad happened while creating the post"}),
                 ),
             ));
         }
@@ -124,7 +133,7 @@ pub async fn update_post_controller(
 
     if post_query.is_err() {
         let error_response = serde_json::json!({
-            "status": "error",
+            "status": "fail",
             "message": format!("Post item with ID: {} not found", post_id),
         });
         return Err((StatusCode::NOT_FOUND, Json(error_response)));
@@ -168,7 +177,61 @@ pub async fn update_post_controller(
             return Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(
-                    json!({"status": "error","message": "Something bad happened while updating the post"}),
+                    json!({"status": "fail","message": "Something bad happened while updating the post"}),
+                ),
+            ));
+        }
+    }
+}
+
+#[debug_handler]
+pub async fn delete_post_controller(
+    Path(params): Path<ParamOptions>,
+    State(data): State<Arc<AppState>>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let post_id = params.id.parse::<i32>().unwrap();
+
+    let post_query = sqlx::query_as!(
+        PostModel,
+        r#"
+        SELECT * FROM post
+        WHERE id = $1
+        "#,
+        post_id
+    )
+    .fetch_one(&data.db)
+    .await;
+
+    if post_query.is_err() {
+        let error_response = serde_json::json!({
+            "status": "fail",
+            "message": format!("Post item with ID: {} not found", post_id),
+        });
+        return Err((StatusCode::NOT_FOUND, Json(error_response)));
+    }
+
+    let delete_query = sqlx::query!(
+        r#"
+        DELETE FROM post
+        WHERE id = $1
+        RETURNING *
+        "#,
+        post_id
+    )
+    .fetch_one(&data.db)
+    .await;
+
+    match delete_query {
+        Ok(_) => {
+            let response = serde_json::json!({"status": "success"});
+
+            return Ok((StatusCode::OK, Json(response)));
+        }
+        Err(_) => {
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(
+                    json!({"status": "fail","message": "Something bad happened while deleting the post"}),
                 ),
             ));
         }
