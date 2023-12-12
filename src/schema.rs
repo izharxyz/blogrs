@@ -8,7 +8,8 @@ pub struct FilterOptions {
 
 #[derive(Deserialize, Debug)]
 pub struct ParamOptions {
-    pub id: String,
+    pub id: Option<i32>,
+    pub slug: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
