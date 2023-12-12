@@ -1,4 +1,4 @@
-mod controller;
+mod handler;
 mod model;
 mod route;
 mod schema;

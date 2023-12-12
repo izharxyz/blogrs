@@ -15,7 +15,7 @@ use crate::{
     AppState,
 };
 
-pub async fn fetch_post_controller(
+pub async fn fetch_post_handler(
     opts: Option<Query<FilterOptions>>,
     State(data): State<Arc<AppState>>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
@@ -56,7 +56,7 @@ pub async fn fetch_post_controller(
 }
 
 #[debug_handler]
-pub async fn create_post_controller(
+pub async fn create_post_handler(
     State(data): State<Arc<AppState>>,
     Json(payload): Json<CreatePostSchema>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
@@ -113,7 +113,7 @@ pub async fn create_post_controller(
 }
 
 #[debug_handler]
-pub async fn update_post_controller(
+pub async fn update_post_handler(
     Path(params): Path<ParamOptions>,
     State(data): State<Arc<AppState>>,
     Json(payload): Json<UpdatePostSchema>,
@@ -185,7 +185,7 @@ pub async fn update_post_controller(
 }
 
 #[debug_handler]
-pub async fn delete_post_controller(
+pub async fn delete_post_handler(
     Path(params): Path<ParamOptions>,
     State(data): State<Arc<AppState>>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
