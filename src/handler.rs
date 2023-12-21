@@ -56,6 +56,42 @@ pub async fn fetch_post_handler(
 }
 
 #[debug_handler]
+pub async fn fetch_post_detail_handler(
+    Path(params): Path<ParamOptions>,
+    State(data): State<Arc<AppState>>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let post_slug = params.slug.unwrap();
+
+    let post_query = sqlx::query_as!(
+        PostModel,
+        r#"
+        SELECT * FROM post
+        WHERE slug = $1
+        "#,
+        post_slug
+    )
+    .fetch_one(&data.db)
+    .await;
+
+    if post_query.is_err() {
+        let error_response = serde_json::json!({
+            "status": "fail",
+            "message": format!("Post item with Slug: {} not found", post_slug),
+        });
+        return Err((StatusCode::NOT_FOUND, Json(error_response)));
+    }
+
+    let post = post_query.unwrap();
+
+    let response = serde_json::json!({
+        "status": "success",
+        "data": post,
+    });
+
+    Ok((StatusCode::OK, Json(response)))
+}
+
+#[debug_handler]
 pub async fn create_post_handler(
     State(data): State<Arc<AppState>>,
     Json(payload): Json<CreatePostSchema>,
@@ -98,7 +134,7 @@ pub async fn create_post_handler(
             {
                 let error_response = serde_json::json!({
                     "status": "fail",
-                    "message": "Post with that title already exists",
+                    "message": "Post with that slug already exists",
                 });
                 return Err((StatusCode::CONFLICT, Json(error_response)));
             }
@@ -118,7 +154,7 @@ pub async fn update_post_handler(
     State(data): State<Arc<AppState>>,
     Json(payload): Json<UpdatePostSchema>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let post_id = params.id.parse::<i32>().unwrap();
+    let post_id = params.id.unwrap();
 
     let post_query = sqlx::query_as!(
         PostModel,
@@ -189,7 +225,7 @@ pub async fn delete_post_handler(
     Path(params): Path<ParamOptions>,
     State(data): State<Arc<AppState>>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let post_id = params.id.parse::<i32>().unwrap();
+    let post_id = params.id.unwrap();
 
     let post_query = sqlx::query_as!(
         PostModel,
