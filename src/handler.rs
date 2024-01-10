@@ -11,7 +11,7 @@ use serde_json::json;
 
 use crate::{
     model::PostModel,
-    schema::{CreatePostSchema, FilterOptions, ParamOptions, UpdatePostSchema},
+    schema::{CreatePostSchema, FetchAllPostSchema, FilterOptions, ParamOptions, UpdatePostSchema},
     AppState,
 };
 
@@ -25,9 +25,9 @@ pub async fn fetch_post_handler(
     let offset = (opts.page.unwrap_or(1) - 1) * limit;
 
     let post_query = sqlx::query_as!(
-        PostModel,
+        FetchAllPostSchema,
         r#"
-        SELECT * FROM post
+        SELECT id, title, slug, user_id, excerpt, category_id, created_at, updated_at FROM post
         ORDER BY created_at DESC
         LIMIT $1 OFFSET $2
         "#,
@@ -101,12 +101,12 @@ pub async fn create_post_handler(
     let excerpt = payload.excerpt;
     let content = payload.content;
     let category_id = payload.category_id.unwrap_or(1);
-    let author_id = 1; // TODO: Change this to the logged in user
+    let user_id = 1; // TODO: Change this to the logged in user
 
     let create_query = sqlx::query_as!(
         PostModel,
         r#"
-        INSERT INTO post (title, slug, excerpt, content, category_id, author_id)
+        INSERT INTO post (title, slug, excerpt, content, category_id, user_id)
         VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING *
         "#,
@@ -115,7 +115,7 @@ pub async fn create_post_handler(
         excerpt,
         content,
         category_id,
-        author_id
+        user_id
     )
     .fetch_one(&data.db)
     .await;
