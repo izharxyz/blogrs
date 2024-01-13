@@ -6,7 +6,7 @@ use axum::{
 };
 
 use crate::{
-    handler::{
+    handlers::post::{
         create_post_handler, delete_post_handler, fetch_post_detail_handler, fetch_post_handler,
         update_post_handler,
     },

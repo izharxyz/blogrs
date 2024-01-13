@@ -10,7 +10,7 @@ use axum::{
 use serde_json::json;
 
 use crate::{
-    model::PostModel,
+    models::post::PostModel,
     schema::{CreatePostSchema, FetchAllPostSchema, FilterOptions, ParamOptions, UpdatePostSchema},
     AppState,
 };

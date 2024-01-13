@@ -1,5 +1,5 @@
-mod handler;
-mod model;
+mod handlers;
+mod models;
 mod route;
 mod schema;
 
