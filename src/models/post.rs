@@ -13,9 +13,3 @@ pub struct PostModel {
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
     pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
-
-#[derive(FromRow, Serialize, Deserialize)]
-pub struct CategoryModel {
-    pub id: i32,
-    pub name: String,
-}
