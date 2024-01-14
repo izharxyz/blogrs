@@ -122,6 +122,7 @@ pub async fn create_post_handler(
 
     match create_query {
         Ok(created_post) => {
+            tracing::info!("Successfully created post with slug: {}", created_post.slug);
             let response = serde_json::json!({"status": "success","data": serde_json::json!({
                 "post": created_post
             })});
@@ -138,6 +139,7 @@ pub async fn create_post_handler(
                 });
                 return Err((StatusCode::CONFLICT, Json(error_response)));
             }
+            tracing::error!("Error creating post: {:?}", e);
             return Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(
@@ -154,15 +156,15 @@ pub async fn update_post_handler(
     State(data): State<Arc<AppState>>,
     Json(payload): Json<UpdatePostSchema>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let post_id = params.id.unwrap();
+    let post_slug = params.slug.unwrap();
 
     let post_query = sqlx::query_as!(
         PostModel,
         r#"
         SELECT * FROM post
-        WHERE id = $1
+        WHERE slug = $1
         "#,
-        post_id
+        post_slug
     )
     .fetch_one(&data.db)
     .await;
@@ -170,7 +172,7 @@ pub async fn update_post_handler(
     if post_query.is_err() {
         let error_response = serde_json::json!({
             "status": "fail",
-            "message": format!("Post item with ID: {} not found", post_id),
+            "message": format!("Post item with slug: {} not found", post_slug),
         });
         return Err((StatusCode::NOT_FOUND, Json(error_response)));
     }
@@ -188,7 +190,7 @@ pub async fn update_post_handler(
         r#"
         UPDATE post
         SET title = $1, slug = $2, excerpt = $3, content = $4, category_id = $5
-        WHERE id = $6
+        WHERE slug = $6
         RETURNING *
         "#,
         title,
@@ -196,20 +198,31 @@ pub async fn update_post_handler(
         excerpt,
         content,
         category_id,
-        post_id
+        post_slug
     )
     .fetch_one(&data.db)
     .await;
 
     match update_query {
         Ok(updated_post) => {
+            tracing::info!("Successfully updated post with slug: {}", post_slug);
             let response = serde_json::json!({"status": "success","data": serde_json::json!({
                 "post": updated_post
             })});
 
             return Ok((StatusCode::OK, Json(response)));
         }
-        Err(_) => {
+        Err(e) => {
+            if e.to_string()
+                .contains("duplicate key value violates unique constraint")
+            {
+                let error_response = serde_json::json!({
+                    "status": "fail",
+                    "message": "Post with that slug already exists",
+                });
+                return Err((StatusCode::CONFLICT, Json(error_response)));
+            }
+            tracing::error!("Error updating post: {:?}", e);
             return Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(
@@ -225,15 +238,15 @@ pub async fn delete_post_handler(
     Path(params): Path<ParamOptions>,
     State(data): State<Arc<AppState>>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let post_id = params.id.unwrap();
+    let post_slug = params.slug.unwrap();
 
     let post_query = sqlx::query_as!(
         PostModel,
         r#"
         SELECT * FROM post
-        WHERE id = $1
+        WHERE slug = $1
         "#,
-        post_id
+        post_slug
     )
     .fetch_one(&data.db)
     .await;
@@ -241,7 +254,7 @@ pub async fn delete_post_handler(
     if post_query.is_err() {
         let error_response = serde_json::json!({
             "status": "fail",
-            "message": format!("Post item with ID: {} not found", post_id),
+            "message": format!("Post item with slug: {} not found", post_slug),
         });
         return Err((StatusCode::NOT_FOUND, Json(error_response)));
     }
@@ -249,21 +262,23 @@ pub async fn delete_post_handler(
     let delete_query = sqlx::query!(
         r#"
         DELETE FROM post
-        WHERE id = $1
+        WHERE slug = $1
         RETURNING *
         "#,
-        post_id
+        post_slug
     )
     .fetch_one(&data.db)
     .await;
 
     match delete_query {
         Ok(_) => {
+            tracing::info!("Successfully deleted post with slug: {}", post_slug);
             let response = serde_json::json!({"status": "success"});
 
             return Ok((StatusCode::OK, Json(response)));
         }
-        Err(_) => {
+        Err(e) => {
+            tracing::error!("Error deleting post: {:?}", e);
             return Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(
