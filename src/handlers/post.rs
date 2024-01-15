@@ -127,7 +127,7 @@ pub async fn create_post_handler(
                 "post": created_post
             })});
 
-            return Ok((StatusCode::CREATED, Json(response)));
+            Ok((StatusCode::CREATED, Json(response)))
         }
         Err(e) => {
             if e.to_string()
@@ -140,12 +140,12 @@ pub async fn create_post_handler(
                 return Err((StatusCode::CONFLICT, Json(error_response)));
             }
             tracing::error!("Error creating post: {:?}", e);
-            return Err((
+            Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(
                     json!({"status": "fail","message": "Something bad happened while creating the post"}),
                 ),
-            ));
+            ))
         }
     }
 }
@@ -210,7 +210,7 @@ pub async fn update_post_handler(
                 "post": updated_post
             })});
 
-            return Ok((StatusCode::OK, Json(response)));
+            Ok((StatusCode::OK, Json(response)))
         }
         Err(e) => {
             if e.to_string()
@@ -223,12 +223,12 @@ pub async fn update_post_handler(
                 return Err((StatusCode::CONFLICT, Json(error_response)));
             }
             tracing::error!("Error updating post: {:?}", e);
-            return Err((
+            Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(
                     json!({"status": "fail","message": "Something bad happened while updating the post"}),
                 ),
-            ));
+            ))
         }
     }
 }
@@ -275,16 +275,16 @@ pub async fn delete_post_handler(
             tracing::info!("Successfully deleted post with slug: {}", post_slug);
             let response = serde_json::json!({"status": "success"});
 
-            return Ok((StatusCode::OK, Json(response)));
+            Ok((StatusCode::OK, Json(response)))
         }
         Err(e) => {
             tracing::error!("Error deleting post: {:?}", e);
-            return Err((
+            Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(
                     json!({"status": "fail","message": "Something bad happened while deleting the post"}),
                 ),
-            ));
+            ))
         }
     }
 }
