@@ -47,14 +47,32 @@ pub struct UpdatePostSchema {
 }
 
 // Auth related schemas
-#[derive(Serialize, Deserialize, Debug)]
+// user data schema is for response data so it doesn't include password.
+#[derive(Serialize, Debug)]
+pub struct UserDataSchema {
+    pub id: i32,
+    pub name: Option<String>,
+    pub username: String,
+    pub email: String,
+    pub created_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TokenClaims {
+    pub sub: String,
+    pub iat: usize,
+    pub exp: usize,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct RegisterUserSchema {
-    pub name: String,
+    pub username: String,
     pub email: String,
     pub password: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct LoginUserSchema {
     pub email: String,
     pub password: String,
