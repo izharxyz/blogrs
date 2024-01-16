@@ -1,3 +1,4 @@
+mod guard;
 mod handlers;
 mod models;
 mod route;
@@ -22,8 +23,13 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use route::api_routes;
 
+pub struct Env {
+    jwt_secret: String,
+}
+
 pub struct AppState {
     db: Pool<Postgres>,
+    env: Env,
 }
 
 #[tokio::main]
@@ -31,6 +37,7 @@ async fn main() {
     dotenv().ok();
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let jwt_secret = std::env::var("JWT_SECRET").expect("JWT_SECRET env variable must be set");
 
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::new(
@@ -60,7 +67,10 @@ async fn main() {
         .allow_credentials(false)
         .allow_headers([AUTHORIZATION, ACCEPT, CONTENT_TYPE]);
 
-    let app_state = Arc::new(AppState { db: pool.clone() });
+    let app_state = Arc::new(AppState {
+        db: pool.clone(),
+        env: Env { jwt_secret },
+    });
     let app = Router::new()
         .route("/", get(|| async { "Welcome to blogrs API!" }))
         .nest("/api", api_routes(app_state))
