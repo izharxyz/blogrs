@@ -6,7 +6,7 @@ use axum::{
     extract::State,
     http::{header, Response, StatusCode},
     response::IntoResponse,
-    Extension, Json,
+    Json,
 };
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use jsonwebtoken::{encode, EncodingKey, Header};
@@ -169,5 +169,21 @@ pub async fn login_user_handler(
         .headers_mut()
         .insert(header::SET_COOKIE, cookie.to_string().parse().unwrap());
 
+    Ok(response)
+}
+
+#[debug_handler]
+pub async fn logout_user_handler(
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let cookie = Cookie::build(("token", ""))
+        .path("/")
+        .max_age(time::Duration::hours(-1))
+        .same_site(SameSite::Lax)
+        .http_only(true);
+
+    let mut response = Response::new(json!({"status": "success"}).to_string());
+    response
+        .headers_mut()
+        .insert(header::SET_COOKIE, cookie.to_string().parse().unwrap());
     Ok(response)
 }
