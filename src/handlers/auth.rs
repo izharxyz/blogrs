@@ -94,3 +94,80 @@ pub async fn register_user_handler(
     })});
     Ok(Json(response))
 }
+
+#[debug_handler]
+pub async fn login_user_handler(
+    State(data): State<Arc<AppState>>,
+    Json(payload): Json<LoginUserSchema>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let user = sqlx::query_as!(
+        UserModel,
+        "SELECT * FROM users WHERE email = $1",
+        payload.email.to_ascii_lowercase()
+    )
+    .fetch_optional(&data.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Error fetching user from database: {e:?}");
+        let error_response = serde_json::json!({
+            "status": "fail",
+            "message": "Error fetching user from database",
+        });
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?
+    .ok_or_else(|| {
+        let error_response = serde_json::json!({
+            "status": "fail",
+            "message": "Invalid email or password",
+        });
+        (StatusCode::BAD_REQUEST, Json(error_response))
+    })?;
+
+    let is_valid_passwd = match PasswordHash::new(&user.password) {
+        Ok(parsed_hash) => Argon2::default()
+            .verify_password(payload.password.as_bytes(), &parsed_hash)
+            .map_or(false, |_| true),
+        Err(_) => false,
+    };
+
+    if !is_valid_passwd {
+        let error_response = serde_json::json!({
+            "status": "fail",
+            "message": "Invalid password",
+        });
+        return Err((StatusCode::BAD_REQUEST, Json(error_response)));
+    }
+
+    let claims = TokenClaims {
+        iat: chrono::Utc::now().timestamp() as usize,
+        exp: (chrono::Utc::now() + chrono::Duration::hours(24)).timestamp() as usize,
+        email: user.email.to_owned(),
+    };
+
+    let token = encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(data.env.jwt_secret.as_ref()),
+    )
+    .map_err(|e| {
+        tracing::error!("Error while generating token: {e:?}");
+        let error_response = serde_json::json!({
+            "status": "fail",
+            "message": "Error while generating token",
+        });
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+    })?;
+
+    let cookie = Cookie::build(("token", token.to_owned()))
+        .path("/")
+        .max_age(time::Duration::hours(24 * 7))
+        .same_site(SameSite::Lax)
+        .http_only(true);
+
+    let mut response = Response::new(json!({"status": "success", "token": token}).to_string());
+    response
+        .headers_mut()
+        .insert(header::SET_COOKIE, cookie.to_string().parse().unwrap());
+
+    Ok(response)
+}
