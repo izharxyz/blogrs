@@ -30,7 +30,6 @@ pub struct FetchAllPostSchema {
 pub struct CreatePostSchema {
     pub title: String,
     pub slug: String,
-    pub user_id: i32,
     pub excerpt: String,
     pub content: String,
     #[serde(skip_serializing_if = "Option::is_none")]

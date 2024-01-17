@@ -37,8 +37,9 @@ pub async fn register_user_handler(
     Json(payload): Json<RegisterUserSchema>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let user_exists: Option<bool> =
-        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)")
+        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 OR username = $2)")
             .bind(payload.email.to_owned().to_ascii_lowercase())
+            .bind(payload.username.to_owned())
             .fetch_one(&data.db)
             .await
             .map_err(|e| {
@@ -53,7 +54,7 @@ pub async fn register_user_handler(
         if exists {
             let error_response = serde_json::json!({
                 "status": "fail",
-                "message": "User with that email already exists",
+                "message": "User already exists, please login",
             });
             return Err((StatusCode::CONFLICT, Json(error_response)));
         }
