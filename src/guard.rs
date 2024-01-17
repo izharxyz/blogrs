@@ -13,7 +13,7 @@ use axum_extra::extract::cookie::CookieJar;
 use jsonwebtoken::{decode, DecodingKey, Validation};
 use serde::Serialize;
 
-use crate::{models::user::UserModel, schema::TokenClaims, AppState};
+use crate::{model::UserModel, schema::TokenClaims, AppState};
 
 #[derive(Debug, Serialize)]
 pub struct ErrorResponse {

@@ -15,7 +15,7 @@ use rand_core::OsRng;
 use serde_json::json;
 
 use crate::{
-    models::user::UserModel,
+    model::UserModel,
     schema::{LoginUserSchema, RegisterUserSchema, TokenClaims, UserDataSchema},
     AppState,
 };

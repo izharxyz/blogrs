@@ -1,6 +1,6 @@
 mod guard;
 mod handlers;
-mod models;
+mod model;
 mod route;
 mod schema;
 
