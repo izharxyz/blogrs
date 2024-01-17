@@ -6,7 +6,7 @@ pub struct PostModel {
     pub id: i32,
     pub title: String,
     pub slug: String,
-    pub user_id: Option<i32>,
+    pub user_id: i32,
     pub excerpt: String,
     pub content: String,
     pub category_id: Option<i32>,
