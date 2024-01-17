@@ -6,8 +6,9 @@ use axum::{
     extract::State,
     http::{header, Response, StatusCode},
     response::IntoResponse,
-    Json,
+    Extension, Json,
 };
+
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use jsonwebtoken::{encode, EncodingKey, Header};
 use rand_core::OsRng;
@@ -186,4 +187,18 @@ pub async fn logout_user_handler(
         .headers_mut()
         .insert(header::SET_COOKIE, cookie.to_string().parse().unwrap());
     Ok(response)
+}
+
+#[debug_handler]
+pub async fn current_user_handler(
+    Extension(user): Extension<UserModel>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let response = serde_json::json!({
+        "status":  "success",
+        "data": serde_json::json!({
+            "user": filter_user_data(&user)
+        })
+    });
+
+    Ok(Json(response))
 }

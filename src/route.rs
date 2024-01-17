@@ -9,7 +9,9 @@ use axum::{
 use crate::{
     guard::auth_guard_middleware,
     handlers::{
-        auth::{login_user_handler, logout_user_handler, register_user_handler},
+        auth::{
+            current_user_handler, login_user_handler, logout_user_handler, register_user_handler,
+        },
         post::{
             create_post_handler, delete_post_handler, fetch_post_detail_handler,
             fetch_post_handler, update_post_handler,
@@ -30,6 +32,13 @@ pub fn api_routes(app_state: Arc<AppState>) -> Router {
         .route(
             "/auth/logout",
             post(logout_user_handler).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                auth_guard_middleware,
+            )),
+        )
+        .route(
+            "/auth/current_user",
+            get(current_user_handler).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 auth_guard_middleware,
             )),

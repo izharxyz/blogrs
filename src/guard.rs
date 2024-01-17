@@ -10,7 +10,6 @@ use axum::{
 };
 
 use axum_extra::extract::cookie::CookieJar;
-use dotenv::dotenv;
 use jsonwebtoken::{decode, DecodingKey, Validation};
 use serde::Serialize;
 
@@ -28,9 +27,6 @@ pub async fn auth_guard_middleware(
     mut req: Request<Body>,
     next: Next,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-    dotenv().ok();
-    let jwt_secret = std::env::var("JWT_SECRET").expect("JWT_SECRET env variable must be set");
-
     let token = cookie_jar
         .get("token")
         .map(|cookie| cookie.value().to_string())
@@ -49,14 +45,14 @@ pub async fn auth_guard_middleware(
         .ok_or_else(|| {
             let error_response = ErrorResponse {
                 status: "fail",
-                message: "You are not logged in, please provide token".to_string(),
+                message: "You are not logged in, please login and try again".to_string(),
             };
             (StatusCode::UNAUTHORIZED, Json(error_response))
         })?;
 
     let claims = decode::<TokenClaims>(
         &token,
-        &DecodingKey::from_secret(jwt_secret.as_ref()),
+        &DecodingKey::from_secret(data.env.jwt_secret.as_ref()),
         &Validation::default(),
     )
     .map_err(|_| {
