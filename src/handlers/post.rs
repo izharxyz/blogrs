@@ -5,12 +5,12 @@ use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
     response::IntoResponse,
-    Json,
+    Extension, Json,
 };
 use serde_json::json;
 
 use crate::{
-    models::post::PostModel,
+    models::{post::PostModel, user::UserModel},
     schema::{CreatePostSchema, FetchAllPostSchema, FilterOptions, ParamOptions, UpdatePostSchema},
     AppState,
 };
@@ -93,6 +93,7 @@ pub async fn fetch_post_detail_handler(
 
 #[debug_handler]
 pub async fn create_post_handler(
+    Extension(current_user): Extension<UserModel>,
     State(data): State<Arc<AppState>>,
     Json(payload): Json<CreatePostSchema>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
@@ -101,7 +102,7 @@ pub async fn create_post_handler(
     let excerpt = payload.excerpt;
     let content = payload.content;
     let category_id = payload.category_id.unwrap_or(1);
-    let user_id = 1; // TODO: Change this to the logged in user
+    let user_id = current_user.id;
 
     let create_query = sqlx::query_as!(
         PostModel,
@@ -153,6 +154,7 @@ pub async fn create_post_handler(
 #[debug_handler]
 pub async fn update_post_handler(
     Path(params): Path<ParamOptions>,
+    Extension(current_user): Extension<UserModel>,
     State(data): State<Arc<AppState>>,
     Json(payload): Json<UpdatePostSchema>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
@@ -178,6 +180,14 @@ pub async fn update_post_handler(
     }
 
     let post = post_query.unwrap();
+
+    if post.user_id != current_user.id {
+        let error_response = serde_json::json!({
+            "status": "fail",
+            "message": "You are not authorized to update this post",
+        });
+        return Err((StatusCode::UNAUTHORIZED, Json(error_response)));
+    }
 
     let title = payload.title.unwrap_or(post.title);
     let slug = payload.slug.unwrap_or(post.slug);
@@ -236,6 +246,7 @@ pub async fn update_post_handler(
 #[debug_handler]
 pub async fn delete_post_handler(
     Path(params): Path<ParamOptions>,
+    Extension(current_user): Extension<UserModel>,
     State(data): State<Arc<AppState>>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let post_slug = params.slug.unwrap();
@@ -257,6 +268,16 @@ pub async fn delete_post_handler(
             "message": format!("Post item with slug: {} not found", post_slug),
         });
         return Err((StatusCode::NOT_FOUND, Json(error_response)));
+    }
+
+    let post = post_query.unwrap();
+
+    if post.user_id != current_user.id {
+        let error_response = serde_json::json!({
+            "status": "fail",
+            "message": "You are not authorized to delete this post",
+        });
+        return Err((StatusCode::UNAUTHORIZED, Json(error_response)));
     }
 
     let delete_query = sqlx::query!(
