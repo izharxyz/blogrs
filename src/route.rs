@@ -24,9 +24,27 @@ pub fn api_routes(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route("/post", get(fetch_post_handler))
         .route("/post/:slug", get(fetch_post_detail_handler))
-        .route("/post/create", post(create_post_handler))
-        .route("/post/update/:slug", patch(update_post_handler))
-        .route("/post/delete/:slug", delete(delete_post_handler))
+        .route(
+            "/post/create",
+            post(create_post_handler).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                auth_guard_middleware,
+            )),
+        )
+        .route(
+            "/post/update/:slug",
+            patch(update_post_handler).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                auth_guard_middleware,
+            )),
+        )
+        .route(
+            "/post/delete/:slug",
+            delete(delete_post_handler).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                auth_guard_middleware,
+            )),
+        )
         .route("/auth/register", post(register_user_handler))
         .route("/auth/login", post(login_user_handler))
         .route(
