@@ -19,7 +19,7 @@ pub struct FetchAllPostSchema {
     pub id: i32,
     pub title: String,
     pub slug: String,
-    pub user_id: Option<i32>,
+    pub user_id: i32,
     pub excerpt: String,
     pub category_id: Option<i32>,
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
@@ -30,7 +30,7 @@ pub struct FetchAllPostSchema {
 pub struct CreatePostSchema {
     pub title: String,
     pub slug: String,
-    pub user_id: Option<i32>,
+    pub user_id: i32,
     pub excerpt: String,
     pub content: String,
     #[serde(skip_serializing_if = "Option::is_none")]
