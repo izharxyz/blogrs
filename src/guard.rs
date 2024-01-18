@@ -35,11 +35,9 @@ pub async fn auth_guard_middleware(
                 .get(header::AUTHORIZATION)
                 .and_then(|auth_header| auth_header.to_str().ok())
                 .and_then(|auth_value| {
-                    if let Some(stripped) = auth_value.strip_prefix("Bearer ") {
-                        Some(stripped.to_owned())
-                    } else {
-                        None
-                    }
+                    auth_value
+                        .strip_prefix("Bearer ")
+                        .map(|stripped| stripped.to_owned())
                 })
         })
         .ok_or_else(|| {
