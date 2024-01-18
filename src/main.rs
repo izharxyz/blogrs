@@ -64,7 +64,7 @@ async fn main() {
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST, Method::PATCH, Method::DELETE])
         .allow_origin(Any)
-        .allow_credentials(true)
+        .allow_credentials(false)
         .allow_headers([AUTHORIZATION, ACCEPT, CONTENT_TYPE]);
 
     let app_state = Arc::new(AppState {
