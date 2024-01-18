@@ -8,11 +8,15 @@ This is a Blog API written in Rust using the [Axum](https://github.com/tokio-rs/
 
 1. Clone the repository: `git clone https://github.com/zzedddd/blogrs.git`
 2. Navigate to the project directory: `cd blogrs`
-3. Install dependencies: `cargo build`
+3. Install cargo-shuttle: `cargo install --version 0.36.0 cargo-shuttle`
+4. Install dependencies and run locally: `cargo shuttle run`
 
 ## Usage
 
-To run the project, use the command `cargo run`.
+To run the project, use the command `cargo shuttle run`.
+The application will start a server at `http://localhost:8000`.
+
+Note: `docker` must be installed for local run as shuttle uses it for postgres.
 
 ## API Routes and Endpoints
 
